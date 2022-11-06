@@ -7,5 +7,6 @@ How to use the program
 3. Select the number of brands and number of tag teams you want per brand
 4. Select the number of women's tag teams you want per brand.
 	a. If you do not want a women's tag division, just select 0 
-5. Click the Generate button
-6. A draft.txt file will be created and opened for you, showing the rosters, teams, champions, and divisions of each brand.
+5. If you want a 2nd Midcard Title per brand, or a Midcard Women's Title, check their respective checkboxes
+6. Click the Generate button
+7. A draft.txt file will be created and opened for you, showing the rosters, teams, champions, and divisions of each brand.
