@@ -1,20 +1,147 @@
-# Importing the necessary packages
-import random
-import os
+import random, os
 import PySimpleGUI as sg
-from sys import exit
 
 
-# Convert a roster file into a list
-def getRoster(rFile):
-    with open(rFile) as f:
+# create the brand class
+class Brand:
+    # constructor
+    def __init__(self, name, men, women):
+        self.name = name
+        self.men = men
+        self.women = women
+        self.roster = men + women
+
+    # method to create tag teams
+    def createTeams(self, team_number):
+        # create variables
+        men = self.men
+        self.teams = []
+
+        random.shuffle(men)
+
+        # assign teams
+        for i in range(0, team_number * 2, 2):
+            self.teams.append((men[i], men[i + 1]))
+        return self.teams
+
+    def createWomenTeams(self, womens_team_number):
+        women = self.women
+        self.women_teams = []
+        if womens_team_number == 0: return self.women_teams
+
+        random.shuffle(women)
+
+        # assign teams
+        for i in range(0, womens_team_number * 2, 2):
+            self.women_teams.append((women[i], women[i + 1]))
+        return self.women_teams
+
+    # method to assign champions
+    def assignChampions(self, teams, second_midcard, womens_midcard):
+        male_roster = self.men
+        female_roster = self.women
+
+        # randomize order of sections
+        random.shuffle(male_roster)
+        random.shuffle(female_roster)
+        random.shuffle(teams)
+
+        # create variables
+        self.champions = []
+        second_midcard_champion = None
+        womens_midcard_champion = None
+
+        singles_division = Brand.removeTeams(male_roster, teams)
+
+        # assign champions
+        world_champion = singles_division[0]
+        midcard_champion = singles_division[1]
+        womens_champion = female_roster[0]
+        tag_champions = teams[0]
+        if second_midcard: second_midcard_champion = singles_division[2]
+        if womens_midcard: womens_midcard_champion = female_roster[1]
+
+        # put champions in list
+        self.champions = [world_champion, midcard_champion, womens_champion, tag_champions,
+                          second_midcard_champion, womens_midcard_champion]
+        return self.champions
+
+    # method to assign divisions
+    def assignDivisions(self, tag_teams, champions, second_midcard, womens_midcard):
+        # create the variables
+        men = self.men
+        women = self.women
+        self.divisions = []
+        world_division, midcard_division, womens_division, tag_division, second_midcard_division, womens_midcard_division = [], [], [], [], [], []
+        male_belt_order = 1
+        female_belt_order = 1
+
+        # prepare lists for divisions
+        Brand.removeTeams(men, tag_teams)
+
+        # shuffle the lists
+        random.shuffle(men)
+        random.shuffle(women)
+        random.shuffle(tag_teams)
+
+        # Create the men's divisions
+        for m in men:
+
+            # World Title
+            if male_belt_order == 1:
+                world_division.append(m)
+                male_belt_order = 2
+
+            # Midcard Title
+            elif male_belt_order == 2:
+                midcard_division.append(m)
+                if second_midcard:
+                    male_belt_order = 3
+                else:
+                    male_belt_order = 1
+
+            # 2nd Midcard Title
+            elif male_belt_order == 3:
+                second_midcard_division.append(m)
+                male_belt_order = 1
+
+        # Women's Division(s)
+        for w in women:
+            if female_belt_order == 1:
+                womens_division.append(w)
+                if womens_midcard: female_belt_order = 2
+
+            elif female_belt_order == 2:
+                womens_midcard_division.append(w)
+                female_belt_order = 1
+        tag_division = tag_teams
+
+        self.divisions = [world_division, midcard_division, womens_division, tag_division,
+                          second_midcard_division, womens_midcard_division]
+        return self.divisions
+
+    @staticmethod
+    def removeTeams(roster, teams):
+        singles_roster = roster
+        for r in singles_roster:
+            for t in teams:
+                if r == t[0] or r == t[1]:
+                    singles_roster.remove(r)
+        return singles_roster
+
+
+# additional functions
+
+# create the rosters
+def getRoster(roster_file):
+    with open(roster_file) as f:
         roster = f.readlines()
     return roster
 
 
-# Draft the brands
+# draft the brands
 def draftRoster(roster, brands):
-    raw, sd, nxt, aew, uk, roh = [], [], [], [], [], []  # Roster lists
+    raw_roster, smackdown_roster, nxt_roster, aew_roster, nxt_uk_roster, roh_roster = [], [], [], [], [], []  # Roster lists
     b = 1  # Brand Counter
     random.shuffle(roster)  # Shuffle the roster order
 
@@ -23,13 +150,13 @@ def draftRoster(roster, brands):
 
         # Raw Pick
         if b == 1:
-            raw.append(r[:-1])
+            raw_roster.append(r[:-1])
             b = 2
             continue
 
         # Smackdown Pick
         if b == 2:
-            sd.append(r[:-1])
+            smackdown_roster.append(r[:-1])
             if brands == 2:
                 b = 1
                 continue
@@ -39,7 +166,7 @@ def draftRoster(roster, brands):
 
         # NXT Pick
         if b == 3:
-            nxt.append(r[:-1])
+            nxt_roster.append(r[:-1])
             if brands == 3:
                 b = 1
                 continue
@@ -49,7 +176,7 @@ def draftRoster(roster, brands):
 
         # AEW Pick
         if b == 4:
-            aew.append(r[:-1])
+            aew_roster.append(r[:-1])
             if brands == 4:
                 b = 1
                 continue
@@ -59,7 +186,7 @@ def draftRoster(roster, brands):
 
         # NXT UK Pick
         if b == 5:
-            uk.append(r[:-1])
+            nxt_uk_roster.append(r[:-1])
             if brands == 5:
                 b = 1
                 continue
@@ -69,252 +196,35 @@ def draftRoster(roster, brands):
 
         # ROH Pick
         if b == 6:
-            roh.append(r[:-1])
+            roh_roster.append(r[:-1])
             b = 1
 
             continue
 
-    brandRosters = [raw, sd, nxt, aew, uk, roh]
+    brandRosters = [raw_roster, smackdown_roster, nxt_roster, aew_roster, nxt_uk_roster, roh_roster]
     return brandRosters
 
 
-# Create the tag teams
-def createTagTeams(roster, teamNum):
-    random.shuffle(roster)
-    tagTeams = []
-
-    for i in range(1, teamNum * 2, 2):
-        tagTeams.append((roster[i], roster[i + 1]))
-
-    return tagTeams
+def addTeams(roster, teams):
+    for t in teams:
+        roster.append(t[0])
+        roster.append(t[1])
+    return roster
 
 
-# Assign the champions
-def assignChampions(men, women, teams, mid2, wMid):
-    random.shuffle(men)
-    random.shuffle(women)
-    random.shuffle(teams)
-
-    worldChamp = men[0]
-    midChamp = men[1]
-    womenChamp = women[0]
-    tagChamp = teams[0]
-
-    # 2nd Midcard Champion
-    if mid2:
-        mid2Champ = men[2]
-    else:
-        mid2Champ = None
-
-    # Women's Midcard Champion
-    if wMid:
-        wMidChamp = women[1]
-    else:
-        wMidChamp = None
-
-    brandChampions = [worldChamp, midChamp, womenChamp, tagChamp, mid2Champ, wMidChamp]
-    return brandChampions
-
-
-# Assign the divisions
-def createDivisions(men, women, teams, champions, mid2, wMid):
-    # Remove teams and champions from pools
-    for m in men:
-        for t in teams:
-            if m == t[0] or m == t[1]: men.remove(m)
-    for m in men:
-        if m in champions: men.remove(m)
-
-    for w in women:
-        if w in champions: women.remove(w)
-
-    # Randomize the order
-    random.shuffle(men)
-    random.shuffle(women)
-    random.shuffle(teams)
-
-    belt = 1  # Single's title counter
-    wBelt = 1  # Women's title counter
-
-    worldDiv = []
-    midDiv = []
-    womenDiv = []
-    tagDiv = []
-    mid2Div = []
-    wMidDiv = []
-
-    # Assign the men's divisions
-    for m in men:
-
-        # World Title
-        if belt == 1:
-            worldDiv.append(m)
-            belt = 2
-
-        # Midcard Title
-        elif belt == 2:
-            midDiv.append(m)
-            if mid2:
-                belt = 3
-            else:
-                belt = 1
-
-        # 2nd Midcard Title
-        elif belt == 3:
-            mid2Div.append(m)
-            belt = 1
-
-    # Women's Division(s)
-    for w in women:
-
-        if wBelt == 1:
-            womenDiv.append(w)
-            if wMid: wBelt = 2
-
-        elif wBelt == 2:
-            wMidDiv.append(w)
-            wBelt = 1
-
-    # Tag Team Division
-    for t in teams: tagDiv.append(t)
-
-    brandDivs = [worldDiv, midDiv, womenDiv, tagDiv, mid2Div, wMidDiv]
-    return brandDivs
-
-
-def removeWomenTag(women, teams):
-    for w in women:
-        for t in teams:
-            if w == t[0] or w == t[1]: women.remove(w)
-            break
-    return women
-
-
-def main():
-    inputs = gui()  # Get GUI inputs
-
-    mRoster, wRoster = getRoster(inputs[0]), getRoster(inputs[1])  # Create the roster lists
-    brands = int(inputs[2])  # Get the number of brands
-    womenTagDivision = int(inputs[4])
-    mid2, wMid = inputs[5], inputs[6]
-
-    # Draft the rosters
-    men, women = draftRoster(mRoster, brands), draftRoster(wRoster, brands)
-
-    # Raw
-    rawM, rawW = men[0], women[0]  # Create variables for rosters
-    rMen, rWomen = rawM, rawW  # Variables to hold original values of roster list, as it will be modified later
-
-    # Smackdown
-    sdM, sdW = men[1], women[1]
-    sMen, sWomen = sdM, sdW
-
-    # Check if there are 3 brands
-    if brands > 2:
-        nxtM, nxtW = men[2], women[2]
-        nMen, nWomen = nxtM, nxtW
-
-    # Check if there are 4 brands
-    if brands > 3:
-        aewM, aewW = men[3], women[3]
-        aMen, aWomen = aewM, aewW
-
-    # Check if there are 5 brands
-    if brands > 4:
-        ukM, ukW = men[4], women[4]
-        uMen, uWomen = ukM, ukW
-
-    # Check if there are 6 brands
-    if brands > 5:
-        rohM, rohW = men[5], women[5]
-        rMen, rWomen = rohM, rohW
-
-    # Make the men's tag teams
-    teamNum = int(inputs[3])  # Get the number of tag teams
-    rawTeams = createTagTeams(rawM, teamNum)
-    sdTeams = createTagTeams(sdM, teamNum)
-    if brands > 2: nxtTeams = createTagTeams(nxtM, teamNum)
-    if brands > 3: aewTeams = createTagTeams(aewM, teamNum)
-    if brands > 4: ukTeams = createTagTeams(ukM, teamNum)
-    if brands > 5: rohTeams = createTagTeams(rohM, teamNum)
-
-    # Make the women's tag teams if requested
-    if womenTagDivision:  # Check if Women's Tag Teams was selected
-        rawWTeams, sdWTeams = createTagTeams(rawW, womenTagDivision), createTagTeams(sdW, womenTagDivision)
-        if brands > 2: nxtWTeams = createTagTeams(nxtW, womenTagDivision)
-        if brands > 3: aewWTeams = createTagTeams(aewW, womenTagDivision)
-        if brands > 4: ukWTeams = createTagTeams(ukW, womenTagDivision)
-        if brands > 5: rohWTeams = createTagTeams(rohW, womenTagDivision)
-
-        womenTeams = rawWTeams + sdWTeams
-        rawW = removeWomenTag(rawW, rawWTeams)
-        sdW = removeWomenTag(sdW, sdWTeams)
-        if brands > 2:
-            womenTeams += nxtWTeams
-            nxtW = removeWomenTag(nxtW, nxtWTeams)
-        if brands > 3:
-            womenTeams += aewWTeams
-            aewW = removeWomenTag(aewW, aewWTeams)
-        if brands > 4:
-            womenTeams += ukWTeams
-            ukW = removeWomenTag(ukW, ukWTeams)
-        if brands > 5:
-            womenTeams += rohWTeams
-            rohW = removeWomenTag(rohW, rohWTeams)
-
-        # Assign the Champion and Division Order
-        random.shuffle(womenTeams)
-
-    # Make the champions
-    rawChamps = assignChampions(rawM, rawW, rawTeams, mid2, wMid)
-    sdChamps = assignChampions(sdM, sdW, sdTeams, mid2, wMid)
-    if brands > 2: nxtChamps = assignChampions(nxtM, nxtW, nxtTeams, mid2, wMid)
-    if brands > 3: aewChamps = assignChampions(aewM, aewW, aewTeams, mid2, wMid)
-    if brands > 4: ukChamps = assignChampions(ukM, ukW, ukTeams, mid2, wMid)
-    if brands > 5: rohChamps = assignChampions(rohM, rohW, rohTeams, mid2, wMid)
-
-    # Make the divisions
-    rawDivs = createDivisions(rawM, rawW, rawTeams, rawChamps, mid2, wMid)
-    sdDivs = createDivisions(sdM, sdW, sdTeams, sdChamps, mid2, wMid)
-    if brands > 2: nxtDivs = createDivisions(nxtM, nxtW, nxtTeams, nxtChamps, mid2, wMid)
-    if brands > 3: aewDivs = createDivisions(aewM, aewW, aewTeams, aewChamps, mid2, wMid)
-    if brands > 4: ukDivs = createDivisions(ukM, ukW, ukTeams, ukChamps, mid2, wMid)
-    if brands > 5: rohDivs = createDivisions(rohM, rohW, rohTeams, rohChamps, mid2, wMid)
-
-    # Output to a txt file
-
-    # Clear the file if it exists
-    f = open("draft.txt", 'w')
-    f.close()
-    f = open("draft.txt", 'a')
-
-    # Add the Header
-    f.write("WWE 2K22 Random Roster Draft\n")
-    f.write("=" * 30 + "\n\n")
-
-    # Add the brand information
-    makeTxtFile(f, "Raw", rMen, rWomen, rawTeams, rawChamps, rawDivs, mid2, wMid)
-    makeTxtFile(f, "Smackdown", sMen, sWomen, sdTeams, sdChamps, sdDivs, mid2, wMid)
-    if brands > 2: makeTxtFile(f, "NXT", nMen, nWomen, nxtTeams, nxtChamps, nxtDivs, mid2, wMid)
-    if brands > 3: makeTxtFile(f, "AEW", aMen, aWomen, aewTeams, aewChamps, aewDivs, mid2, wMid)
-    if brands > 4: makeTxtFile(f, "NXT UK", uMen, uWomen, ukTeams, ukChamps, ukDivs, mid2, wMid)
-    if brands > 5: makeTxtFile(f, "ROH", rMen, rWomen, rohTeams, rohChamps, rohDivs, mid2, wMid)
-    if womenTagDivision: writeWomenTag(f, womenTeams)
-
-    # Open the draft file
-    os.startfile("draft.txt")
-
-
-# Create the draft .txt file
-def makeTxtFile(f, brand, men, women, teams, champs, divs, mid2, wMid):
+def makeTxtFile(f, brand, men, women, teams, champions, divisions, second_midcard_division, womens_midcard_division):
     # Header
     f.write(brand + "\n")
     f.write("=" * 30 + "\n\n")
 
+    full_mens_roster = addTeams(men, teams)
+    full_mens_roster.sort()
+    women.sort()
+
     # Men's Roster
     f.write("Men's Roster\n")
     f.write("=" * 30 + "\n")
-    for m in men:
+    for m in full_mens_roster:
         f.write(m + "\n")
     f.write("\n")
 
@@ -335,13 +245,13 @@ def makeTxtFile(f, brand, men, women, teams, champs, divs, mid2, wMid):
     # Champions
     f.write("Champions\n")
     f.write("=" * 30 + "\n")
-    f.write("World Champion: " + champs[0] + "\n")
-    f.write("Midcard Champion: " + champs[1] + "\n")
-    if mid2: f.write("2nd Midcard Champion: " + champs[4] + "\n")
-    f.write("Tag Team Champions: " + champs[3][0] + " & " + champs[3][1] + "\n")
-    f.write("Women's Champion: " + champs[2] + "\n")
-    if wMid: f.write("Women's Midcard Champion: " + champs[5] + "\n")
-    f.write("\n")
+    f.write("World Champion: " + champions[0] + "\n")
+    f.write("Midcard Champion: " + champions[1] + "\n")
+    if second_midcard_division: f.write(f"2nd Midcard Champion: {champions[4]}\n")
+    f.write("Tag Team Champions: " + champions[3][0] + " & " + champions[3][1] + "\n")
+    f.write("Women's Champion: " + champions[2] + "\n")
+    if womens_midcard_division: f.write(f"Women's Midcard Champion {champions[5]}")
+    f.write("\n\n")
 
     # Divisions
     f.write("Divisions\n")
@@ -350,67 +260,66 @@ def makeTxtFile(f, brand, men, women, teams, champs, divs, mid2, wMid):
     # World Title
     f.write("World Title\n")
     f.write("=" * 30 + "\n")
-    for d in divs[0]:
+    for d in divisions[0]:
         f.write(d + "\n")
     f.write("\n\n")
 
     # Midcard Title
     f.write("Midcard Title\n")
     f.write("=" * 30 + "\n")
-    for d in divs[1]:
+    for d in divisions[1]:
         f.write(d + "\n")
     f.write("\n\n")
 
     # 2nd Midcard Title
-    if mid2:
+    if second_midcard_division:
         f.write("2nd Midcard Title\n")
         f.write("=" * 30 + "\n")
-        for d in divs[4]:
-            f.write(d + "\n")
+        for d in divisions[4]:
+            f.write(f"{d}\n")
         f.write("\n\n")
 
-    # Tag Team Title
+    # Tag Title
     f.write("Tag Team Title\n")
     f.write("=" * 30 + "\n")
-    for d in divs[3]:
+    for d in divisions[3]:
         f.write(d[0] + " & " + d[1] + "\n")
     f.write("\n\n")
 
     # Women's Title
     f.write("Women's Title \n")
     f.write("=" * 30 + "\n")
-    for d in divs[2]:
+    for d in divisions[2]:
         f.write(d + "\n")
     f.write("\n\n")
 
     # Women's Midcard Title
-    if wMid:
+    if womens_midcard_division:
         f.write("Women's Midcard Title\n")
         f.write("=" * 30 + "\n")
-        for d in divs[5]:
-            f.write(d + "\n")
-        f.write("\n\n")
+        for d in divisions[5]:
+            f.write(f"{d}\n")
+    f.write("\n\n")
 
 
-def writeWomenTag(f, womenTeams):
+def writeWomenTag(f, womens_teams, womens_tag_champions):
     f.write("\n\n")
     f.write("Women's Tag Division\n")
     f.write("=" * 30)
     f.write("\n\n")
-    f.write("Women\'s Tag Team Champions: {} & {}".format(womenTeams[0][0], womenTeams[0][1]))
+    f.write("Women\'s Tag Team Champions: {} & {}".format(womens_tag_champions[0], womens_tag_champions[1]))
     f.write("\n\n")
-    for w in womenTeams[1:]:
+    for w in womens_teams[1:]:
         f.write(w[0] + " & " + w[1] + "\n")
 
 
-# User Interface for the program
 def gui():
-    curr = os.getcwd()
+    current_directory = os.getcwd()
 
     sg.theme("SystemDefault1")
     # GUI Variables
-    men = sg.FileBrowse("Men's Roster", file_types=[("TXT Files", "*.txt")], initial_folder=curr)
-    women = sg.FileBrowse("Women's Roster", file_types=[("TXT Files", "*.txt")], initial_folder=curr)
+    men = sg.FileBrowse("Men's Roster", file_types=[("TXT Files", "*.txt")], initial_folder=current_directory)
+    women = sg.FileBrowse("Women's Roster", file_types=[("TXT Files", "*.txt")], initial_folder=current_directory)
 
     # GUI Layout
     layout = [
@@ -442,25 +351,133 @@ def gui():
         # If the Submit button is pressed
         elif event == "Generate":
             # Create variables for GUI inputs
-            maleRoster = values["-FILE_PATH-"]
-            femaleRoster = values["-FILE_PATH2-"]
-            brands = values["brands"]
-            teams = values["teams"]
-            wTag = values["wTag"]
-            mid2 = values["mid2"]
-            wMid = values["wMid"]
+            male_roster = values["-FILE_PATH-"]
+            female_roster = values["-FILE_PATH2-"]
+            brand_number = values["brands"]
+            tag_teams = values["teams"]
+            womens_tag_team_title = values["wTag"]
+            second_midcard_title = values["mid2"]
+            womens_midcard_title = values["wMid"]
 
-            guiInputs = [maleRoster, femaleRoster, brands, teams, wTag, mid2, wMid]  # Create list of GUI inputs
+            # Create list of GUI inputs
+            gui_inputs = [male_roster, female_roster, int(brand_number), int(tag_teams),
+                         int(womens_tag_team_title), second_midcard_title, womens_midcard_title]
 
             # If any fields are blank, give an error message, and continue
-            if guiInputs.count("") > 0:
+            if gui_inputs.count("") > 0:
                 sg.PopupError(
                     "One or both roster files has not been given. \nPlease give both the men and women rosters.")
                 continue
-            print(mid2)
-            return guiInputs
+            return gui_inputs
 
     window.close()
+
+
+def main():
+    inputs = gui()
+
+    male_roster_file = inputs[0]
+    female_roster_file = inputs[1]
+    brand_number = inputs[2]
+    team_number = inputs[3]
+    women_tag_number = inputs[4]
+    second_mid_card = inputs[5]
+    women_midcard = inputs[6]
+
+    # get the rosters
+    male_roster = getRoster(male_roster_file)
+    female_roster = getRoster(female_roster_file)
+
+    # create the draft text file
+    draft_file = open("draft.txt", 'w')
+    draft_file.close()
+    draft_file = open("draft.txt", 'a')
+
+    # draft the rosters
+    men, women = draftRoster(male_roster, brand_number), draftRoster(female_roster, brand_number)
+
+    # create the brands
+
+    # create Raw
+    Raw = Brand("Raw", men[0], women[0])
+    Raw.createTeams(team_number)
+    Raw.createWomenTeams(women_tag_number)
+    Raw.assignChampions(Raw.teams, second_mid_card, women_midcard)
+    Raw.assignDivisions(Raw.teams, Raw.champions, second_mid_card, women_midcard)
+    makeTxtFile(draft_file, "Raw", Raw.men, Raw.women, Raw.teams, Raw.champions, Raw.divisions,
+                second_mid_card, women_midcard)
+
+    # create Smackdown
+    if brand_number > 1:
+        Smackdown = Brand("Smackdown", men[1], women[1])
+        Smackdown.createTeams(team_number)
+        Smackdown.createWomenTeams(women_tag_number)
+        Smackdown.assignChampions(Smackdown.teams, second_mid_card, women_midcard)
+        Smackdown.assignDivisions(Smackdown.teams, Smackdown.champions, second_mid_card, women_midcard)
+        makeTxtFile(draft_file, "Smackdown", Smackdown.men, Smackdown.women, Smackdown.teams, Smackdown.champions,
+                    Smackdown.divisions,
+                    second_mid_card, women_midcard)
+
+    # create NXT
+    if brand_number > 2:
+        NXT = Brand("NXT", men[2], women[2])
+        NXT.createTeams(team_number)
+        NXT.createWomenTeams(women_tag_number)
+        NXT.assignChampions(NXT.teams, second_mid_card, women_midcard)
+        NXT.assignDivisions(NXT.teams, NXT.champions, second_mid_card, women_midcard)
+        makeTxtFile(draft_file, "NXT", NXT.men, NXT.women, NXT.teams, NXT.champions, NXT.divisions,
+                    second_mid_card, women_midcard)
+
+    # create AEW
+    if brand_number > 3:
+        AEW = Brand("AEW", men[3], women[3])
+        AEW.createTeams(team_number)
+        AEW.createWomenTeams(women_tag_number)
+        AEW.assignChampions(AEW.teams, second_mid_card, women_midcard)
+        AEW.assignDivisions(AEW.teams, AEW.champions, second_mid_card, women_midcard)
+        makeTxtFile(draft_file, "AEW", AEW.men, AEW.women, AEW.teams, AEW.champions, AEW.divisions,
+                    second_mid_card, women_midcard)
+
+    # create NXT UK
+    if brand_number > 4:
+        UK = Brand("NXT UK", men[4], women[4])
+        UK.createTeams(team_number)
+        UK.createWomenTeams(women_tag_number)
+        UK.assignChampions(UK.teams, second_mid_card, women_midcard)
+        UK.assignDivisions(UK.teams, UK.champions, second_mid_card, women_midcard)
+        makeTxtFile(draft_file, "NXT UK", UK.men, UK.women, UK.teams, UK.champions, UK.divisions,
+                    second_mid_card, women_midcard)
+
+    # create ROH
+    if brand_number > 5:
+        ROH = Brand("ROH", men[5], women[5])
+        ROH.createTeams(team_number)
+        ROH.createWomenTeams(women_tag_number)
+        ROH.assignChampions(ROH.teams, second_mid_card, women_midcard)
+        ROH.assignDivisions(ROH.teams, ROH.champions, second_mid_card, women_midcard)
+        makeTxtFile(draft_file, "ROH", ROH.men, ROH.women, ROH.teams, ROH.champions, ROH.divisions,
+                    second_mid_card, women_midcard)
+
+    # set womens tag team champions if division exists
+    if women_tag_number > 0:
+        if women_tag_number == 1:
+            womens_tag_division = Raw.women_teams
+        elif women_tag_number == 2:
+            womens_tag_division = Raw.women_teams + Smackdown.women_teams
+        elif women_tag_number == 3:
+            womens_tag_division = Raw.women_teams + Smackdown.women_teams + NXT.women_teams
+        elif women_tag_number == 4:
+            womens_tag_division = Raw.women_teams + Smackdown.women_teams + NXT.women_teams + AEW.women_teams
+        elif women_tag_number == 5:
+            womens_tag_division = Raw.women_teams + Smackdown.women_teams + NXT.women_teams + AEW.women_teams + UK.women_teams
+        elif women_tag_number == 6:
+            womens_tag_division = Raw.women_teams + Smackdown.women_teams + NXT.women_teams + AEW.women_teams + UK.women_teams + ROH.women_teams
+        random.shuffle(womens_tag_division)
+        womens_tag_champions = womens_tag_division[0]
+        writeWomenTag(draft_file, womens_tag_division, womens_tag_champions)
+
+    draft_file.close()  # close the file handler
+    os.startfile("draft.txt")  # open the draft file
 
 
 main()
