@@ -1,5 +1,7 @@
 import random, os
 import PySimpleGUI as sg
+import openpyxl as xl
+from openpyxl.styles import Font, Border, Side
 
 
 # create the brand class
@@ -151,7 +153,7 @@ def draftRoster(roster, brands):
         # Raw Pick
         if b == 1:
             raw_roster.append(r[:-1])
-            b = 2
+            if brands > 1: b = 2
             continue
 
         # Smackdown Pick
@@ -327,9 +329,9 @@ def gui():
         [sg.InputText(key="-FILE_PATH-"), men],  # Men's Roster Input
         [sg.InputText(key="-FILE_PATH2-"), women],  # Women's Roster Input
         [sg.Text("Select the number of brands"),  # Brand Number
-         sg.Combo(["2", "3", "4", "5", "6"], default_value="2", key='brands')],
+         sg.Combo(["1", "2", "3", "4", "5", "6"], default_value="2", key='brands')],
         [sg.Text("Select the number of tag teams per brand"),  # Team Number
-         sg.Combo(["2", "3", "4", "5", "6", "7", "8"], default_value="4", key='teams')],
+         sg.Combo(["2", "3", "4", "5", "6", "7", "8", "9", "10"], default_value="4", key='teams')],
         [sg.Text("Select the number of Women's Tag Teams you want per brand"),  # Women's Team Number
          sg.Combo(["0", "1", "2", "3", "4"], default_value="0", key='wTag')],
         [sg.Checkbox("2nd Midcard Title", key='mid2')],
@@ -361,7 +363,7 @@ def gui():
 
             # Create list of GUI inputs
             gui_inputs = [male_roster, female_roster, int(brand_number), int(tag_teams),
-                         int(womens_tag_team_title), second_midcard_title, womens_midcard_title]
+                          int(womens_tag_team_title), second_midcard_title, womens_midcard_title]
 
             # If any fields are blank, give an error message, and continue
             if gui_inputs.count("") > 0:
@@ -371,6 +373,96 @@ def gui():
             return gui_inputs
 
     window.close()
+
+
+def createSpreadsheet(Brand, brand_number, draft_workbook, roster_sheet, tag_teams_sheet, champions_sheet,
+                      divisions_sheet, women_tag_sheet, womens_tag_division):
+    # write the rosters
+    roster_sheet.cell(row=1, column=brand_number).value = Brand.name
+    full_roster = Brand.men + Brand.women
+
+    for row in range(len(full_roster)):
+        roster_sheet.cell(row=row + 2, column=brand_number).value = full_roster[row]
+
+    # write the tag teams
+    full_teams = Brand.teams + Brand.women_teams
+    tag_teams_sheet.cell(row=1, column=brand_number).value = Brand.name
+    for row in range(len(full_teams)):
+        tag_teams_sheet.cell(row=row + 2, column=brand_number).value = f"{full_teams[row][0]} & {full_teams[row][1]}"
+
+    # write the champions
+    # champion headers
+    champions_sheet.cell(row=2, column=1).value = "World Champion"
+    champions_sheet.cell(row=3, column=1).value = "Midcard Champion"
+    champions_sheet.cell(row=4, column=1).value = "Tag Team Champions"
+    champions_sheet.cell(row=5, column=1).value = "Women's Champion"
+    champions_sheet.cell(row=6, column=1).value = "2nd Midcard Champion"
+    champions_sheet.cell(row=7, column=1).value = "Women's Midcard Champion"
+
+    # writing the cells
+    champions_sheet.cell(row=1, column=brand_number + 1).value = Brand.name
+    champions_sheet.cell(row=2, column=brand_number + 1).value = Brand.champions[0]
+    champions_sheet.cell(row=3, column=brand_number + 1).value = Brand.champions[1]
+    champions_sheet.cell(row=4, column=brand_number + 1).value = f"{Brand.champions[3][0]} & {Brand.champions[3][1]}"
+    champions_sheet.cell(row=5, column=brand_number + 1).value = Brand.champions[2]
+    champions_sheet.cell(row=6, column=brand_number + 1).value = Brand.champions[4]
+    champions_sheet.cell(row=7, column=brand_number + 1).value = Brand.champions[5]
+
+    # writing the women's tag champions
+    if womens_tag_division:
+        champions_sheet.cell(row=8, column=1).value = "Women's Tag Team Champions"
+        champions_sheet.cell(row=8, column=2).value = f"{womens_tag_division[0][0]} & {womens_tag_division[0][1]}"
+
+    # Writing the Divisions
+
+    # Header
+    divisions_sheet.cell(row=1, column=brand_number * 6 - 5).value = Brand.name
+    divisions_sheet.merge_cells(start_row=1, start_column=brand_number * 6 - 5,
+                                end_row=1, end_column=brand_number * 6)
+    divisions_sheet.cell(row=2, column=brand_number * 6 - 5).value = "World Title"
+    divisions_sheet.cell(row=2, column=brand_number * 6 - 4).value = "Midcard Title"
+    divisions_sheet.cell(row=2, column=brand_number * 6 - 3).value = "Tag Team Titles"
+    divisions_sheet.cell(row=2, column=brand_number * 6 - 2).value = "Women's Title"
+    divisions_sheet.cell(row=2, column=brand_number * 6 - 1).value = "2nd Midcard Title"
+    divisions_sheet.cell(row=2, column=brand_number * 6).value = "Women's Midcard Title"
+
+    # Body
+
+    # World Divisions
+    for row in range(len(Brand.divisions[0])):
+        divisions_sheet.cell(row=row + 3, column=brand_number * 6 - 5).value = Brand.divisions[0][row]
+
+    # Midcard Divisions
+    for row in range(len(Brand.divisions[1])):
+        divisions_sheet.cell(row=row + 3, column=brand_number * 6 - 4).value = Brand.divisions[1][row]
+
+    # Tag Team Division
+    for row in range(len(Brand.divisions[3])):
+        divisions_sheet.cell(row=row + 3,
+                             column=brand_number * 6 - 3).value = f"{Brand.divisions[3][row][0]} & {Brand.divisions[3][row][1]}"
+
+    # Women's Division
+    for row in range(len(Brand.divisions[2])):
+        divisions_sheet.cell(row=row + 3, column=brand_number * 6 - 2).value = Brand.divisions[2][row]
+
+    # 2nd Midcard Division
+    if Brand.divisions[4]:
+        for row in range(len(Brand.divisions[4])):
+            divisions_sheet.cell(row=row + 3, column=brand_number * 6 - 1).value = Brand.divisions[4][row]
+
+    # Women's Midcard Division
+    if Brand.divisions[5]:
+        for row in range(len(Brand.divisions[5])):
+            divisions_sheet.cell(row=row + 3, column=brand_number * 6).value = Brand.divisions[5][row]
+
+    # Women's Tag Division
+    if womens_tag_division:
+        women_tag_sheet.cell(row=1, column=1).value = "Women's Tag Team Division"
+        for row in range(len(womens_tag_division)):
+            women_tag_sheet.cell(row=row + 2,
+                                 column=1).value = f"{womens_tag_division[row][0]} & {womens_tag_division[row][1]}"
+
+    draft_workbook.save("Draft.xlsx")
 
 
 def main():
@@ -392,6 +484,16 @@ def main():
     draft_file = open("draft.txt", 'w')
     draft_file.close()
     draft_file = open("draft.txt", 'a')
+
+    # create the draft spreadsheet
+    draft_spreadsheet = xl.Workbook()
+    rosters_sheet = draft_spreadsheet.create_sheet("Rosters")
+    tag_teams_sheet = draft_spreadsheet.create_sheet("Tag Teams")
+    champions_sheet = draft_spreadsheet.create_sheet("Champions")
+    divisions_sheet = draft_spreadsheet.create_sheet("Divisions")
+    women_tag_sheet = draft_spreadsheet.create_sheet("Women's Tag Division")
+
+    # format the spreadsheet
 
     # draft the rosters
     men, women = draftRoster(male_roster, brand_number), draftRoster(female_roster, brand_number)
@@ -459,25 +561,49 @@ def main():
                     second_mid_card, women_midcard)
 
     # set womens tag team champions if division exists
+    womens_tag_division = []
     if women_tag_number > 0:
-        if women_tag_number == 1:
+        if brand_number == 1:
             womens_tag_division = Raw.women_teams
-        elif women_tag_number == 2:
+        elif brand_number == 2:
             womens_tag_division = Raw.women_teams + Smackdown.women_teams
-        elif women_tag_number == 3:
+        elif brand_number == 3:
             womens_tag_division = Raw.women_teams + Smackdown.women_teams + NXT.women_teams
-        elif women_tag_number == 4:
+        elif brand_number == 4:
             womens_tag_division = Raw.women_teams + Smackdown.women_teams + NXT.women_teams + AEW.women_teams
-        elif women_tag_number == 5:
+        elif brand_number == 5:
             womens_tag_division = Raw.women_teams + Smackdown.women_teams + NXT.women_teams + AEW.women_teams + UK.women_teams
-        elif women_tag_number == 6:
+        elif brand_number == 6:
             womens_tag_division = Raw.women_teams + Smackdown.women_teams + NXT.women_teams + AEW.women_teams + UK.women_teams + ROH.women_teams
         random.shuffle(womens_tag_division)
         womens_tag_champions = womens_tag_division[0]
         writeWomenTag(draft_file, womens_tag_division, womens_tag_champions)
 
+    # create spreadsheet
+    createSpreadsheet(Raw, 1, draft_spreadsheet, rosters_sheet, tag_teams_sheet, champions_sheet, divisions_sheet,
+                      women_tag_sheet, womens_tag_division)
+    if brand_number > 1:
+        createSpreadsheet(Smackdown, 2, draft_spreadsheet, rosters_sheet, tag_teams_sheet, champions_sheet,
+                          divisions_sheet, women_tag_sheet, womens_tag_division)
+    if brand_number > 2:
+        createSpreadsheet(NXT, 3, draft_spreadsheet, rosters_sheet, tag_teams_sheet, champions_sheet,
+                          divisions_sheet, women_tag_sheet, womens_tag_division)
+    if brand_number > 3:
+        createSpreadsheet(AEW, 4, draft_spreadsheet, rosters_sheet, tag_teams_sheet, champions_sheet,
+                          divisions_sheet, women_tag_sheet, womens_tag_division)
+    if brand_number > 4:
+        createSpreadsheet(UK, 5, draft_spreadsheet, rosters_sheet, tag_teams_sheet, champions_sheet,
+                          divisions_sheet, women_tag_sheet, womens_tag_division)
+    if brand_number > 5:
+        createSpreadsheet(ROH, 6, draft_spreadsheet, rosters_sheet, tag_teams_sheet, champions_sheet,
+                          divisions_sheet, women_tag_sheet, womens_tag_division)
+
     draft_file.close()  # close the file handler
     os.startfile("draft.txt")  # open the draft file
+
+    std = draft_spreadsheet['Sheet']
+    draft_spreadsheet.remove(std)
+    draft_spreadsheet.save("Draft.xlsx")
 
 
 main()
