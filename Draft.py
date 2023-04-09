@@ -1,8 +1,11 @@
 import random, os
 import PySimpleGUI as sg
 import openpyxl as xl
-from openpyxl.styles import Font, Border, Side
+from openpyxl.styles import Font, Alignment, Border, Side
+from openpyxl.utils import get_column_letter
 
+
+# add support for a Tag Team List
 
 # create the brand class
 class Brand:
@@ -465,6 +468,20 @@ def createSpreadsheet(Brand, brand_number, draft_workbook, roster_sheet, tag_tea
     draft_workbook.save("Draft.xlsx")
 
 
+def formatSpreadsheet(cell_range, style):
+    thin_border = Border(left=Side(style='thin'), right=Side(style='thin'),
+                         top=Side(style='thin'), bottom=Side(style='thin'))
+
+    for cell in cell_range:
+        for c in cell:
+            if style == "Header":
+                c.font = Font(name="Arial", size=8, bold=True)
+                c.alignment = Alignment(horizontal='center')
+            elif style == "Body":
+                c.font = Font(name="Arial", size=9, bold=False)
+            c.border = thin_border
+
+
 def main():
     inputs = gui()
 
@@ -599,11 +616,28 @@ def main():
                           divisions_sheet, women_tag_sheet, womens_tag_division)
 
     draft_file.close()  # close the file handler
-    os.startfile("draft.txt")  # open the draft file
+    # os.startfile("draft.txt")  # open the draft file
 
+    headers = [rosters_sheet['A1:Z1'], tag_teams_sheet['A1:Z1'], champions_sheet['A1:Z1'], champions_sheet['A2:A20'],
+               divisions_sheet['A1:BA2'], women_tag_sheet['A1:Z1']]
+    bodies = [rosters_sheet['A2:K200'], tag_teams_sheet['A2:K20'], champions_sheet['B2:K20'],
+              divisions_sheet['A3:BA200'], women_tag_sheet['A2:Z20']]
+
+    for h in headers:
+        formatSpreadsheet(h, "Header")
+
+    for b in bodies:
+        formatSpreadsheet(b, "Body")
     std = draft_spreadsheet['Sheet']
     draft_spreadsheet.remove(std)
-    draft_spreadsheet.save("Draft.xlsx")
 
+    for col in range(1, divisions_sheet.max_column + 1):
+        rosters_sheet.column_dimensions[get_column_letter(col)].width = 25
+        tag_teams_sheet.column_dimensions[get_column_letter(col)].width = 30
+        champions_sheet.column_dimensions[get_column_letter(col)].width = 25
+        divisions_sheet.column_dimensions[get_column_letter(col)].width = 25
+        women_tag_sheet.column_dimensions[get_column_letter(col)].width = 25
+
+    draft_spreadsheet.save("Draft.xlsx")
 
 main()
