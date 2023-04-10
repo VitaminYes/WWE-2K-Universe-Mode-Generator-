@@ -3,6 +3,7 @@ import PySimpleGUI as sg
 import openpyxl as xl
 from openpyxl.styles import Font, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
+import sys
 
 
 # add support for a Tag Team List
@@ -23,6 +24,7 @@ class Brand:
         self.teams = []
 
         random.shuffle(men)
+
 
         # assign teams
         for i in range(0, team_number * 2, 2):
@@ -334,9 +336,9 @@ def gui():
         [sg.Text("Select the number of brands"),  # Brand Number
          sg.Combo(["1", "2", "3", "4", "5", "6"], default_value="2", key='brands')],
         [sg.Text("Select the number of tag teams per brand"),  # Team Number
-         sg.Combo(["2", "3", "4", "5", "6", "7", "8", "9", "10"], default_value="4", key='teams')],
+         sg.Combo(["2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"], default_value="4", key='teams')],
         [sg.Text("Select the number of Women's Tag Teams you want per brand"),  # Women's Team Number
-         sg.Combo(["0", "1", "2", "3", "4"], default_value="0", key='wTag')],
+         sg.Combo(["0", "1", "2", "3", "4", "5", "6"], default_value="0", key='wTag')],
         [sg.Checkbox("2nd Midcard Title", key='mid2')],
         [sg.Checkbox("Women's Midcard Title", key='wMid')],
         [sg.Button("Generate"), sg.Exit()]
@@ -368,6 +370,16 @@ def gui():
             gui_inputs = [male_roster, female_roster, int(brand_number), int(tag_teams),
                           int(womens_tag_team_title), second_midcard_title, womens_midcard_title]
 
+
+            # Check if there are enough men/women to have as many tag teams as requested
+
+            if len(getRoster(male_roster)) < int(tag_teams) * int(brand_number) * 2:
+                sg.PopupError("Your men's roster is not big enough to support this many tag teams")
+                continue
+
+            if len(getRoster(female_roster)) < int(womens_tag_team_title) * int(brand_number) * 2:
+                sg.PopupError("Your women's roster is not big enough to support this many tag teams.")
+                continue
             # If any fields are blank, give an error message, and continue
             if gui_inputs.count("") > 0:
                 sg.PopupError(
@@ -639,5 +651,7 @@ def main():
         women_tag_sheet.column_dimensions[get_column_letter(col)].width = 25
 
     draft_spreadsheet.save("Draft.xlsx")
+    sg.PopupOK("Success", "Your Universe has been successfully generated.\n"
+                          "Look for the Draft.txt and Draft.xlsx files in the program's directory for the results")
 
 main()
