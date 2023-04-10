@@ -25,7 +25,6 @@ class Brand:
 
         random.shuffle(men)
 
-
         # assign teams
         for i in range(0, team_number * 2, 2):
             self.teams.append((men[i], men[i + 1]))
@@ -328,17 +327,21 @@ def gui():
     men = sg.FileBrowse("Men's Roster", file_types=[("TXT Files", "*.txt")], initial_folder=current_directory)
     women = sg.FileBrowse("Women's Roster", file_types=[("TXT Files", "*.txt")], initial_folder=current_directory)
 
+    brands = [i for i in range(1, 7)]
+    teams = [i for i in range(1, 21)]
+    women_teams = [i for i in range(0, 11)]
+
     # GUI Layout
     layout = [
         [sg.Text("Select Your Male and Female Roster Files")],  # Title
         [sg.InputText(key="-FILE_PATH-"), men],  # Men's Roster Input
         [sg.InputText(key="-FILE_PATH2-"), women],  # Women's Roster Input
         [sg.Text("Select the number of brands"),  # Brand Number
-         sg.Combo(["1", "2", "3", "4", "5", "6"], default_value="2", key='brands')],
+         sg.Spin(brands, initial_value=2, key='brands', size=4)],
         [sg.Text("Select the number of tag teams per brand"),  # Team Number
-         sg.Combo(["2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"], default_value="4", key='teams')],
+         sg.Spin(teams, key='teams', initial_value=4, size=4, )],
         [sg.Text("Select the number of Women's Tag Teams you want per brand"),  # Women's Team Number
-         sg.Combo(["0", "1", "2", "3", "4", "5", "6"], default_value="0", key='wTag')],
+         sg.Spin(women_teams, initial_value="0", key='wTag', size=4)],
         [sg.Checkbox("2nd Midcard Title", key='mid2')],
         [sg.Checkbox("Women's Midcard Title", key='wMid')],
         [sg.Button("Generate"), sg.Exit()]
@@ -353,7 +356,7 @@ def gui():
 
         # If Window closed or exit button pressed, end the program
         if event in (sg.WIN_CLOSED, 'Exit'):
-            exit()
+            sys.exit()
 
         # If the Submit button is pressed
         elif event == "Generate":
@@ -370,9 +373,32 @@ def gui():
             gui_inputs = [male_roster, female_roster, int(brand_number), int(tag_teams),
                           int(womens_tag_team_title), second_midcard_title, womens_midcard_title]
 
+            # Check if brand number has exceeded the limit
+            if int(brand_number) > 6:
+                gui_inputs[2] = brand_number = 6
+
+            # Check if tag team number has exceeded the limit
+            if int(tag_teams) > 20:
+                gui_inputs[3] = tag_teams = 20
+
+            # Check if women's tag team number has exceeded the limit
+            if int(womens_tag_team_title) > 10:
+                gui_inputs[4] = womens_tag_team_title = 10
+
+            # Check if a roster file is missing
+            if not bool(male_roster) or not bool(female_roster):
+                sg.PopupError(
+                    "Missing Roster File", "One or both roster files has not been given. \n"
+                                           "Please give both the men and women rosters.")
+                continue
+
+            # Check if a roster file is empty
+            if len(getRoster(male_roster)) == 0 or len(getRoster(female_roster)) == 0:
+                sg.PopupError("Empty Roster File", "One or both roster files is empty. \n"
+                                                   "Please use a file with a list of participants")
+                continue
 
             # Check if there are enough men/women to have as many tag teams as requested
-
             if len(getRoster(male_roster)) < int(tag_teams) * int(brand_number) * 2:
                 sg.PopupError("Your men's roster is not big enough to support this many tag teams")
                 continue
@@ -381,10 +407,7 @@ def gui():
                 sg.PopupError("Your women's roster is not big enough to support this many tag teams.")
                 continue
             # If any fields are blank, give an error message, and continue
-            if gui_inputs.count("") > 0:
-                sg.PopupError(
-                    "One or both roster files has not been given. \nPlease give both the men and women rosters.")
-                continue
+
             return gui_inputs
 
     window.close()
@@ -497,6 +520,7 @@ def formatSpreadsheet(cell_range, style):
 def main():
     inputs = gui()
 
+    # create variables from inputs
     male_roster_file = inputs[0]
     female_roster_file = inputs[1]
     brand_number = inputs[2]
@@ -632,7 +656,7 @@ def main():
 
     headers = [rosters_sheet['A1:Z1'], tag_teams_sheet['A1:Z1'], champions_sheet['A1:Z1'], champions_sheet['A2:A20'],
                divisions_sheet['A1:BA2'], women_tag_sheet['A1:Z1']]
-    bodies = [rosters_sheet['A2:K200'], tag_teams_sheet['A2:K20'], champions_sheet['B2:K20'],
+    bodies = [rosters_sheet['A2:K200'], tag_teams_sheet['A2:K40'], champions_sheet['B2:K20'],
               divisions_sheet['A3:BA200'], women_tag_sheet['A2:Z20']]
 
     for h in headers:
@@ -653,5 +677,6 @@ def main():
     draft_spreadsheet.save("Draft.xlsx")
     sg.PopupOK("Success", "Your Universe has been successfully generated.\n"
                           "Look for the Draft.txt and Draft.xlsx files in the program's directory for the results")
+
 
 main()
