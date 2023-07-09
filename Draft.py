@@ -1,7 +1,8 @@
 import random, os
 import PySimpleGUI as sg
 import openpyxl as xl
-from openpyxl.styles import Font, Alignment, Border, Side
+import openpyxl.styles
+from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
 from openpyxl.utils import get_column_letter
 import sys
 
@@ -321,8 +322,18 @@ def writeWomenTag(f, womens_teams, womens_tag_champions):
 
 def gui():
     current_directory = os.getcwd()
-
     sg.theme("SystemDefault1")
+
+    # handle case when excel file is already open
+    try:
+        draft_file = open("Draft.xlsx", 'w')
+        draft_file.close()
+        draft_file = open("Draft.xlsx", 'a')
+    except IOError:
+        sg.PopupError("The Draft.xlsx file is already open.\nPlease close the file before running this program")
+        sys.exit()
+
+
     # GUI Variables
     men = sg.FileBrowse("Men's Roster", file_types=[("TXT Files", "*.txt")], initial_folder=current_directory)
     women = sg.FileBrowse("Women's Roster", file_types=[("TXT Files", "*.txt")], initial_folder=current_directory)
@@ -374,16 +385,13 @@ def gui():
                           int(womens_tag_team_title), second_midcard_title, womens_midcard_title]
 
             # Check if brand number has exceeded the limit
-            if int(brand_number) > 6:
-                gui_inputs[2] = brand_number = 6
+            if int(brand_number) > 6: gui_inputs[2] = brand_number = 6
 
             # Check if tag team number has exceeded the limit
-            if int(tag_teams) > 20:
-                gui_inputs[3] = tag_teams = 20
+            if int(tag_teams) > 20: gui_inputs[3] = tag_teams = 20
 
             # Check if women's tag team number has exceeded the limit
-            if int(womens_tag_team_title) > 10:
-                gui_inputs[4] = womens_tag_team_title = 10
+            if int(womens_tag_team_title) > 10: gui_inputs[4] = womens_tag_team_title = 10
 
             # Check if a roster file is missing
             if not bool(male_roster) or not bool(female_roster):
@@ -417,18 +425,21 @@ def createSpreadsheet(Brand, brand_number, draft_workbook, roster_sheet, tag_tea
                       divisions_sheet, women_tag_sheet, womens_tag_division):
     # write the rosters
     roster_sheet.cell(row=1, column=brand_number).value = Brand.name
+
     full_roster = Brand.men + Brand.women
 
     for row in range(len(full_roster)):
         roster_sheet.cell(row=row + 2, column=brand_number).value = full_roster[row]
 
     # write the tag teams
+
     full_teams = Brand.teams + Brand.women_teams
     tag_teams_sheet.cell(row=1, column=brand_number).value = Brand.name
     for row in range(len(full_teams)):
         tag_teams_sheet.cell(row=row + 2, column=brand_number).value = f"{full_teams[row][0]} & {full_teams[row][1]}"
 
     # write the champions
+
     # champion headers
     champions_sheet.cell(row=2, column=1).value = "World Champion"
     champions_sheet.cell(row=3, column=1).value = "Midcard Champion"
@@ -499,6 +510,58 @@ def createSpreadsheet(Brand, brand_number, draft_workbook, roster_sheet, tag_tea
         for row in range(len(womens_tag_division)):
             women_tag_sheet.cell(row=row + 2,
                                  column=1).value = f"{womens_tag_division[row][0]} & {womens_tag_division[row][1]}"
+
+    # Color in the Brand Headers
+
+    # set colors to each brand
+    raw_fill = PatternFill(start_color='FF0000', end_color='FF0000', fill_type='solid')
+    sd_fill = PatternFill(start_color='00B0F0', end_color='00B0F0', fill_type='solid')
+    nxt_fill = PatternFill(start_color='FFFF00', end_color='FFFF00', fill_type='solid')
+    aew_fill = PatternFill(start_color='00B050', end_color='00B050', fill_type='solid')
+    uk_fill = PatternFill(start_color='FFC000', end_color='FFC000', fill_type='solid')
+    roh_fill = PatternFill(start_color='775973', end_color='775973', fill_type='solid')
+
+    # raw
+    roster_sheet['A1'].fill = raw_fill
+    tag_teams_sheet['A1'].fill = raw_fill
+    champions_sheet['B1'].fill = raw_fill
+    divisions_sheet['A1'].fill = raw_fill
+
+    # smackdown
+    if brand_number > 1:
+        roster_sheet['B1'].fill = sd_fill
+        tag_teams_sheet['B1'].fill = sd_fill
+        champions_sheet['C1'].fill = sd_fill
+        divisions_sheet['G1'].fill = sd_fill
+
+    # nxt
+    if brand_number > 2:
+        roster_sheet['C1'].fill = nxt_fill
+        tag_teams_sheet['C1'].fill = nxt_fill
+        champions_sheet['D1'].fill = nxt_fill
+        divisions_sheet['M1'].fill = nxt_fill
+
+    # aew
+    if brand_number > 3:
+        roster_sheet['D1'].fill = aew_fill
+        tag_teams_sheet['D1'].fill = aew_fill
+        champions_sheet['E1'].fill = aew_fill
+        divisions_sheet['S1'].fill = aew_fill
+
+    # uk
+    if brand_number > 4:
+        roster_sheet['E1'].fill = uk_fill
+        tag_teams_sheet['E1'].fill = uk_fill
+        champions_sheet['E1'].fill = uk_fill
+        divisions_sheet['Y1'].fill = uk_fill
+
+    # roh
+    if brand_number == 6:
+        roster_sheet['F1'].fill = roh_fill
+        tag_teams_sheet['F1'].fill = roh_fill
+        champions_sheet['F1'].fill = roh_fill
+        divisions_sheet['AE1'].fill = roh_fill
+
 
     draft_workbook.save("Draft.xlsx")
 
