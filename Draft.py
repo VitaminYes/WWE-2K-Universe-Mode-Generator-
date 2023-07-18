@@ -6,9 +6,6 @@ from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
 from openpyxl.utils import get_column_letter
 import sys
 
-
-# add support for a Tag Team List
-
 # create the brand class
 class Brand:
     # constructor
@@ -127,6 +124,17 @@ class Brand:
                           second_midcard_division, womens_midcard_division]
         return self.divisions
 
+    def assignFeuds(self, divisions):
+        # create the variables
+        self.feuds = []
+        world_div, mid_div, women_div, tag_div = divisions[0], divisions[1], divisions[2], divisions[3]
+        random.shuffle(world_div); random.shuffle(mid_div); random.shuffle(tag_div); random.shuffle(women_div)
+        self.feuds.append(f"{world_div[0]} Vs. {world_div[1]}")
+        self.feuds.append(f"{mid_div[0]} Vs. {mid_div[1]}")
+        self.feuds.append(f"{women_div[0]} Vs. {women_div[1]}")
+        self.feuds.append(f"{tag_div[0][0]} & {tag_div[0][1]} Vs. {tag_div[1][0]} & {tag_div[1][1]}")
+        return self.feuds
+
     @staticmethod
     def removeTeams(roster, teams):
         singles_roster = roster
@@ -219,7 +227,8 @@ def addTeams(roster, teams):
     return roster
 
 
-def makeTxtFile(f, brand, men, women, teams, champions, divisions, second_midcard_division, womens_midcard_division):
+# add the info of a brand to the text file
+def makeTxtFile(f, brand, men, women, teams, champions, divisions, second_midcard_division, womens_midcard_division, feuds):
     # Header
     f.write(brand + "\n")
     f.write("=" * 30 + "\n\n")
@@ -308,7 +317,15 @@ def makeTxtFile(f, brand, men, women, teams, champions, divisions, second_midcar
             f.write(f"{d}\n")
     f.write("\n\n")
 
+    # Feuds
+    f.write("Rivalries\n")
+    f.write("=" * 30 + "\n")
+    for r in feuds:
+        f.write(f"{r}\n")
+    f.write("\n\n")
 
+
+# add the women's tag division to the text file
 def writeWomenTag(f, womens_teams, womens_tag_champions):
     f.write("\n\n")
     f.write("Women's Tag Division\n")
@@ -320,6 +337,7 @@ def writeWomenTag(f, womens_teams, womens_tag_champions):
         f.write(w[0] + " & " + w[1] + "\n")
 
 
+# graphical interface of the program
 def gui():
     current_directory = os.getcwd()
     sg.theme("SystemDefault1")
@@ -332,7 +350,6 @@ def gui():
     except IOError:
         sg.PopupError("The Draft.xlsx file is already open.\nPlease close the file before running this program")
         sys.exit()
-
 
     # GUI Variables
     men = sg.FileBrowse("Men's Roster", file_types=[("TXT Files", "*.txt")], initial_folder=current_directory)
@@ -421,8 +438,9 @@ def gui():
     window.close()
 
 
+# create excel spreadsheet of the draft
 def createSpreadsheet(Brand, brand_number, draft_workbook, roster_sheet, tag_teams_sheet, champions_sheet,
-                      divisions_sheet, women_tag_sheet, womens_tag_division):
+                      divisions_sheet, feuds_sheet, women_tag_sheet, womens_tag_division):
     # write the rosters
     roster_sheet.cell(row=1, column=brand_number).value = Brand.name
 
@@ -511,6 +529,12 @@ def createSpreadsheet(Brand, brand_number, draft_workbook, roster_sheet, tag_tea
             women_tag_sheet.cell(row=row + 2,
                                  column=1).value = f"{womens_tag_division[row][0]} & {womens_tag_division[row][1]}"
 
+    # Writing The Feuds
+    feuds_sheet.cell(row=1, column=brand_number).value = Brand.name
+    for row in range(len(Brand.feuds)):
+        feuds_sheet.cell(row=row + 2, column=brand_number).value = Brand.feuds[row]
+
+
     # Color in the Brand Headers
 
     # set colors to each brand
@@ -526,6 +550,7 @@ def createSpreadsheet(Brand, brand_number, draft_workbook, roster_sheet, tag_tea
     tag_teams_sheet['A1'].fill = raw_fill
     champions_sheet['B1'].fill = raw_fill
     divisions_sheet['A1'].fill = raw_fill
+    feuds_sheet['A1'].fill = raw_fill
 
     # smackdown
     if brand_number > 1:
@@ -533,6 +558,7 @@ def createSpreadsheet(Brand, brand_number, draft_workbook, roster_sheet, tag_tea
         tag_teams_sheet['B1'].fill = sd_fill
         champions_sheet['C1'].fill = sd_fill
         divisions_sheet['G1'].fill = sd_fill
+        feuds_sheet['B1'].fill = sd_fill
 
     # nxt
     if brand_number > 2:
@@ -540,6 +566,7 @@ def createSpreadsheet(Brand, brand_number, draft_workbook, roster_sheet, tag_tea
         tag_teams_sheet['C1'].fill = nxt_fill
         champions_sheet['D1'].fill = nxt_fill
         divisions_sheet['M1'].fill = nxt_fill
+        feuds_sheet['C1'].fill = nxt_fill
 
     # aew
     if brand_number > 3:
@@ -547,25 +574,28 @@ def createSpreadsheet(Brand, brand_number, draft_workbook, roster_sheet, tag_tea
         tag_teams_sheet['D1'].fill = aew_fill
         champions_sheet['E1'].fill = aew_fill
         divisions_sheet['S1'].fill = aew_fill
+        feuds_sheet['D1'].fill = aew_fill
 
     # uk
     if brand_number > 4:
         roster_sheet['E1'].fill = uk_fill
         tag_teams_sheet['E1'].fill = uk_fill
-        champions_sheet['E1'].fill = uk_fill
+        champions_sheet['F1'].fill = uk_fill
         divisions_sheet['Y1'].fill = uk_fill
+        feuds_sheet['E1'].fill = uk_fill
 
     # roh
     if brand_number == 6:
         roster_sheet['F1'].fill = roh_fill
         tag_teams_sheet['F1'].fill = roh_fill
-        champions_sheet['F1'].fill = roh_fill
+        champions_sheet['G1'].fill = roh_fill
         divisions_sheet['AE1'].fill = roh_fill
-
+        feuds_sheet['F1'].fill = roh_fill
 
     draft_workbook.save("Draft.xlsx")
 
 
+# add formating to the excel spreadsheet
 def formatSpreadsheet(cell_range, style):
     thin_border = Border(left=Side(style='thin'), right=Side(style='thin'),
                          top=Side(style='thin'), bottom=Side(style='thin'))
@@ -580,21 +610,47 @@ def formatSpreadsheet(cell_range, style):
             c.border = thin_border
 
 
+def developBrand(Brand, team_number, women_tag_number, second_midcard, women_midcard, draft_file):
+    Brand.createTeams(team_number)
+    Brand.createWomenTeams(women_tag_number)
+    Brand.assignChampions(Brand.teams, second_midcard, women_midcard)
+    Brand.assignDivisions(Brand.teams, Brand.champions, second_midcard, women_midcard)
+    Brand.assignFeuds(Brand.divisions)
+    makeTxtFile(draft_file, Brand.name, Brand.men, Brand.women, Brand.teams, Brand.champions, Brand.divisions,
+                second_midcard, women_midcard, Brand.feuds)
+
+
+def createWomenTagDivision(women_tag_number, brands, draft_file):
+    if women_tag_number == 0: return
+
+    womens_tag_division = []
+    brand_number = len(brands)
+    print(brand_number)
+    match brand_number:
+        case 1: womens_tag_division = brands[0].women_teams
+        case 2: womens_tag_division = brands[0].women_teams + brands[1].women_teams
+        case 3: womens_tag_division = brands[0].women_teams + brands[1].women_teams + brands[2].women_teams
+        case 4: womens_tag_division = brands[0].women_teams + brands[1].women_teams + brands[2].women_teams + brands[3].women_teams
+        case 5: womens_tag_division = brands[0].women_teams + brands[1].women_teams + brands[2].women_teams + brands[3].women_teams + brands[4].women_teams
+        case 6: womens_tag_division = brands[0].women_teams + brands[1].women_teams + brands[2].women_teams + brands[3].women_teams + brands[4].women_teams + brands[5].women_teams
+
+    random.shuffle(womens_tag_division)
+    womens_tag_champions = womens_tag_division[0]
+    writeWomenTag(draft_file, womens_tag_division, womens_tag_champions)
+    print(womens_tag_division)
+    return womens_tag_division
+
+
 def main():
     inputs = gui()
 
     # create variables from inputs
-    male_roster_file = inputs[0]
-    female_roster_file = inputs[1]
-    brand_number = inputs[2]
-    team_number = inputs[3]
-    women_tag_number = inputs[4]
-    second_mid_card = inputs[5]
-    women_midcard = inputs[6]
+    male_roster_file, female_roster_file = inputs[0], inputs[1]  # roster inputs
+    brand_number, team_number = inputs[2], inputs[3]  # brand inputs
+    women_tag_number, second_midcard, women_midcard = inputs[4], inputs[5], inputs[6]  # optional division inputs
 
     # get the rosters
-    male_roster = getRoster(male_roster_file)
-    female_roster = getRoster(female_roster_file)
+    male_roster, female_roster = getRoster(male_roster_file), getRoster(female_roster_file)
 
     # create the draft text file
     draft_file = open("draft.txt", 'w')
@@ -607,6 +663,7 @@ def main():
     tag_teams_sheet = draft_spreadsheet.create_sheet("Tag Teams")
     champions_sheet = draft_spreadsheet.create_sheet("Champions")
     divisions_sheet = draft_spreadsheet.create_sheet("Divisions")
+    feuds_sheet = draft_spreadsheet.create_sheet("Rivalries")
     women_tag_sheet = draft_spreadsheet.create_sheet("Women's Tag Division")
 
     # format the spreadsheet
@@ -615,112 +672,59 @@ def main():
     men, women = draftRoster(male_roster, brand_number), draftRoster(female_roster, brand_number)
 
     # create the brands
+    brands = []  # list of the brands
 
     # create Raw
     Raw = Brand("Raw", men[0], women[0])
-    Raw.createTeams(team_number)
-    Raw.createWomenTeams(women_tag_number)
-    Raw.assignChampions(Raw.teams, second_mid_card, women_midcard)
-    Raw.assignDivisions(Raw.teams, Raw.champions, second_mid_card, women_midcard)
-    makeTxtFile(draft_file, "Raw", Raw.men, Raw.women, Raw.teams, Raw.champions, Raw.divisions,
-                second_mid_card, women_midcard)
+    developBrand(Raw, team_number, women_tag_number, second_midcard, women_midcard, draft_file)
+    brands.append(Raw)
 
     # create Smackdown
     if brand_number > 1:
         Smackdown = Brand("Smackdown", men[1], women[1])
-        Smackdown.createTeams(team_number)
-        Smackdown.createWomenTeams(women_tag_number)
-        Smackdown.assignChampions(Smackdown.teams, second_mid_card, women_midcard)
-        Smackdown.assignDivisions(Smackdown.teams, Smackdown.champions, second_mid_card, women_midcard)
-        makeTxtFile(draft_file, "Smackdown", Smackdown.men, Smackdown.women, Smackdown.teams, Smackdown.champions,
-                    Smackdown.divisions,
-                    second_mid_card, women_midcard)
+        developBrand(Smackdown, team_number, women_tag_number, second_midcard, women_midcard, draft_file)
+        brands.append(Smackdown)
 
     # create NXT
     if brand_number > 2:
         NXT = Brand("NXT", men[2], women[2])
-        NXT.createTeams(team_number)
-        NXT.createWomenTeams(women_tag_number)
-        NXT.assignChampions(NXT.teams, second_mid_card, women_midcard)
-        NXT.assignDivisions(NXT.teams, NXT.champions, second_mid_card, women_midcard)
-        makeTxtFile(draft_file, "NXT", NXT.men, NXT.women, NXT.teams, NXT.champions, NXT.divisions,
-                    second_mid_card, women_midcard)
+        developBrand(NXT, team_number, women_tag_number, second_midcard, women_midcard, draft_file)
+        brands.append(NXT)
 
     # create AEW
     if brand_number > 3:
         AEW = Brand("AEW", men[3], women[3])
-        AEW.createTeams(team_number)
-        AEW.createWomenTeams(women_tag_number)
-        AEW.assignChampions(AEW.teams, second_mid_card, women_midcard)
-        AEW.assignDivisions(AEW.teams, AEW.champions, second_mid_card, women_midcard)
-        makeTxtFile(draft_file, "AEW", AEW.men, AEW.women, AEW.teams, AEW.champions, AEW.divisions,
-                    second_mid_card, women_midcard)
+        developBrand(AEW, team_number, women_tag_number, second_midcard, women_midcard, draft_file)
+        brands.append(AEW)
 
     # create NXT UK
     if brand_number > 4:
         UK = Brand("NXT UK", men[4], women[4])
-        UK.createTeams(team_number)
-        UK.createWomenTeams(women_tag_number)
-        UK.assignChampions(UK.teams, second_mid_card, women_midcard)
-        UK.assignDivisions(UK.teams, UK.champions, second_mid_card, women_midcard)
-        makeTxtFile(draft_file, "NXT UK", UK.men, UK.women, UK.teams, UK.champions, UK.divisions,
-                    second_mid_card, women_midcard)
+        developBrand(UK, team_number, women_tag_number, second_midcard, women_midcard, draft_file)
+        brands.append(UK)
 
     # create ROH
     if brand_number > 5:
         ROH = Brand("ROH", men[5], women[5])
-        ROH.createTeams(team_number)
-        ROH.createWomenTeams(women_tag_number)
-        ROH.assignChampions(ROH.teams, second_mid_card, women_midcard)
-        ROH.assignDivisions(ROH.teams, ROH.champions, second_mid_card, women_midcard)
-        makeTxtFile(draft_file, "ROH", ROH.men, ROH.women, ROH.teams, ROH.champions, ROH.divisions,
-                    second_mid_card, women_midcard)
+        developBrand(ROH, team_number, women_tag_number, second_midcard, women_midcard, draft_file)
+        brands.append(ROH)
 
     # set womens tag team champions if division exists
-    womens_tag_division = []
-    if women_tag_number > 0:
-        if brand_number == 1:
-            womens_tag_division = Raw.women_teams
-        elif brand_number == 2:
-            womens_tag_division = Raw.women_teams + Smackdown.women_teams
-        elif brand_number == 3:
-            womens_tag_division = Raw.women_teams + Smackdown.women_teams + NXT.women_teams
-        elif brand_number == 4:
-            womens_tag_division = Raw.women_teams + Smackdown.women_teams + NXT.women_teams + AEW.women_teams
-        elif brand_number == 5:
-            womens_tag_division = Raw.women_teams + Smackdown.women_teams + NXT.women_teams + AEW.women_teams + UK.women_teams
-        elif brand_number == 6:
-            womens_tag_division = Raw.women_teams + Smackdown.women_teams + NXT.women_teams + AEW.women_teams + UK.women_teams + ROH.women_teams
-        random.shuffle(womens_tag_division)
-        womens_tag_champions = womens_tag_division[0]
-        writeWomenTag(draft_file, womens_tag_division, womens_tag_champions)
+    womens_tag_division = createWomenTagDivision(women_tag_number, brands, draft_file)
 
     # create spreadsheet
-    createSpreadsheet(Raw, 1, draft_spreadsheet, rosters_sheet, tag_teams_sheet, champions_sheet, divisions_sheet,
-                      women_tag_sheet, womens_tag_division)
-    if brand_number > 1:
-        createSpreadsheet(Smackdown, 2, draft_spreadsheet, rosters_sheet, tag_teams_sheet, champions_sheet,
-                          divisions_sheet, women_tag_sheet, womens_tag_division)
-    if brand_number > 2:
-        createSpreadsheet(NXT, 3, draft_spreadsheet, rosters_sheet, tag_teams_sheet, champions_sheet,
-                          divisions_sheet, women_tag_sheet, womens_tag_division)
-    if brand_number > 3:
-        createSpreadsheet(AEW, 4, draft_spreadsheet, rosters_sheet, tag_teams_sheet, champions_sheet,
-                          divisions_sheet, women_tag_sheet, womens_tag_division)
-    if brand_number > 4:
-        createSpreadsheet(UK, 5, draft_spreadsheet, rosters_sheet, tag_teams_sheet, champions_sheet,
-                          divisions_sheet, women_tag_sheet, womens_tag_division)
-    if brand_number > 5:
-        createSpreadsheet(ROH, 6, draft_spreadsheet, rosters_sheet, tag_teams_sheet, champions_sheet,
-                          divisions_sheet, women_tag_sheet, womens_tag_division)
+    i = 1  # iterator
+    for b in brands:
+        createSpreadsheet(b, i, draft_spreadsheet, rosters_sheet, tag_teams_sheet, champions_sheet, divisions_sheet, feuds_sheet,
+                          women_tag_sheet, womens_tag_division)
+        i += 1
 
     draft_file.close()  # close the file handler
-    # os.startfile("draft.txt")  # open the draft file
 
     headers = [rosters_sheet['A1:Z1'], tag_teams_sheet['A1:Z1'], champions_sheet['A1:Z1'], champions_sheet['A2:A20'],
-               divisions_sheet['A1:BA2'], women_tag_sheet['A1:Z1']]
-    bodies = [rosters_sheet['A2:K200'], tag_teams_sheet['A2:K40'], champions_sheet['B2:K20'],
-              divisions_sheet['A3:BA200'], women_tag_sheet['A2:Z20']]
+               divisions_sheet['A1:BA2'], women_tag_sheet['A1:Z1'], feuds_sheet['A1:Z1']]
+    bodies = [rosters_sheet['A2:K200'], tag_teams_sheet['A2:K50'], champions_sheet['B2:K50'],
+              divisions_sheet['A3:BA200'], women_tag_sheet['A2:Z50'], feuds_sheet['A2:Z50']]
 
     for h in headers:
         formatSpreadsheet(h, "Header")
@@ -736,6 +740,7 @@ def main():
         champions_sheet.column_dimensions[get_column_letter(col)].width = 25
         divisions_sheet.column_dimensions[get_column_letter(col)].width = 25
         women_tag_sheet.column_dimensions[get_column_letter(col)].width = 25
+        feuds_sheet.column_dimensions[get_column_letter(col)].width = 30
 
     draft_spreadsheet.save("Draft.xlsx")
     sg.PopupOK("Success", "Your Universe has been successfully generated.\n"
