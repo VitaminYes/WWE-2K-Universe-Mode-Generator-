@@ -1,7 +1,6 @@
 import random, os
 import PySimpleGUI as sg
 import openpyxl as xl
-import openpyxl.styles
 from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
 from openpyxl.utils import get_column_letter
 import sys
@@ -232,7 +231,7 @@ def addTeams(roster, teams):
 
 
 def makeTabLayout(brand_name, brand_key, title_names, key_names):
-    brand_layout = [[sg.Text("Brand Name: "), sg.Input(key=brand_key, default_text=brand_name)],
+    brand_layout = [[sg.Text("Brand Name: "), sg.Input(key=brand_key, default_text=brand_name, enable_events=True)],
                     [sg.Text("World Title Name: "), sg.Input(key=key_names[0], default_text=title_names[0])],
                     [sg.Text("Midcard Title Name: "), sg.Input(key=key_names[1], default_text=title_names[1])],
                     [sg.Text("Women's Title Name: "), sg.Input(key=key_names[2], default_text=title_names[2])],
@@ -402,9 +401,9 @@ def gui():
         [sg.InputText(key="-FILE_PATH-"), men],  # Men's Roster Input
         [sg.InputText(key="-FILE_PATH2-"), women],  # Women's Roster Input
         [sg.Text("Select the number of brands"),  # Brand Number
-         sg.Spin(brands, initial_value=2, key='brands', size=4)],
+         sg.Spin(brands, initial_value=2, key='brands', size=4, enable_events=True)],
         [sg.Text("Select the number of tag teams per brand"),  # Team Number
-         sg.Spin(teams, key='teams', initial_value=4, size=4, )],
+         sg.Spin(teams, key='teams', initial_value=4, size=4)],
         [sg.Text("Select the number of Women's Tag Teams you want per brand"),  # Women's Team Number
          sg.Spin(women_teams, initial_value="0", key='wTag', size=4)],
         [sg.Checkbox("2nd Midcard Title", key='mid2')],
@@ -420,12 +419,12 @@ def gui():
 
     layout = [[sg.TabGroup([
         [sg.Tab('General', main_layout),
-         sg.Tab('Raw', raw_layout),
-         sg.Tab('Smackdown', sd_layout),
-         sg.Tab('NXT', nxt_layout),
-         sg.Tab('AEW', aew_layout),
-         sg.Tab('NXT UK', uk_layout),
-         sg.Tab('ROH', roh_layout)
+         sg.Tab('Raw', raw_layout, key='raw_tab'),
+         sg.Tab('Smackdown', sd_layout, key='sd_tab'),
+         sg.Tab('NXT', nxt_layout, key='nxt_tab', visible=False),
+         sg.Tab('AEW', aew_layout, key='aew_tab', visible=False),
+         sg.Tab('NXT UK', uk_layout, key='uk_tab', visible=False),
+         sg.Tab('ROH', roh_layout, key='roh_tab', visible=False)
          ]])],
         [sg.Button("Generate"), sg.Exit()]
     ]
@@ -436,6 +435,9 @@ def gui():
     # Create the event loop
     while True:
         event, values = window.read()
+
+        # a list of events to cause a refresh
+        refresh = ["brands", "raw_name", "sd_name", "nxt_name", "aew_name", "uk_name", "roh_name"]
 
         # If Window closed or exit button pressed, end the program
         if event in (sg.WIN_CLOSED, 'Exit'):
@@ -504,6 +506,26 @@ def gui():
             # If any fields are blank, give an error message, and continue
 
             return gui_inputs
+
+        # if a refresh event happens
+        elif refresh.count(event) > 0:
+            brand_number = values["brands"]
+
+            window['raw_tab'].update(title=values["raw_name"])
+            if brand_number == 1: window['sd_tab'].update(visible=False)
+            else: window['sd_tab'].update(visible=True, title=values["sd_name"])
+
+            if brand_number > 2: window['nxt_tab'].update(visible=True, title=values["nxt_name"])
+            else: window['nxt_tab'].update(visible=False)
+
+            if brand_number > 3: window['aew_tab'].update(visible=True, title=values["aew_name"])
+            else: window['aew_tab'].update(visible=False)
+
+            if brand_number > 4: window['uk_tab'].update(visible=True, title=values["uk_name"])
+            else: window['uk_tab'].update(visible=False)
+
+            if brand_number == 6: window['roh_tab'].update(visible=True, title=values["roh_name"])
+            else: window['roh_tab'].update(visible=False)
 
     window.close()
 
