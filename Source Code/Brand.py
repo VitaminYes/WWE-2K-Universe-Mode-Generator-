@@ -40,13 +40,8 @@ class Brand:
 
     # method to assign champions
     def assignChampions(self, teams, second_midcard, womens_midcard):
-        male_roster = self.men
-        female_roster = self.women
-
-        # randomize order of sections
-        random.shuffle(male_roster)
-        random.shuffle(female_roster)
-        random.shuffle(teams)
+        male_roster = self.men; female_roster = self.women
+        random.shuffle(male_roster); random.shuffle(female_roster); random.shuffle(teams)  # randomize order of sections
 
         # create variables
         self.champions = []
@@ -88,34 +83,22 @@ class Brand:
 
         # Create the men's divisions
         for m in men:
+            match male_belt_order:
+                case 1: world_division.append(m); male_belt_order = 2
+                case 2:
+                    midcard_division.append(m)
+                    if second_midcard: male_belt_order = 3
+                    else: male_belt_order = 1
+                case 3: second_midcard_division.append(m); male_belt_order = 1
 
-            # World Title
-            if male_belt_order == 1:
-                world_division.append(m)
-                male_belt_order = 2
-
-            # Midcard Title
-            elif male_belt_order == 2:
-                midcard_division.append(m)
-                if second_midcard:
-                    male_belt_order = 3
-                else:
-                    male_belt_order = 1
-
-            # 2nd Midcard Title
-            elif male_belt_order == 3:
-                second_midcard_division.append(m)
-                male_belt_order = 1
 
         # Women's Division(s)
         for w in women:
             if female_belt_order == 1:
                 womens_division.append(w)
                 if womens_midcard: female_belt_order = 2
+            else: womens_midcard_division.append(w); female_belt_order = 1
 
-            elif female_belt_order == 2:
-                womens_midcard_division.append(w)
-                female_belt_order = 1
         tag_division = tag_teams
 
         self.divisions = [world_division, midcard_division, womens_division, tag_division,
@@ -126,10 +109,7 @@ class Brand:
         # create the variables
         self.feuds = []
         world_div, mid_div, women_div, tag_div = divisions[0], divisions[1], divisions[2], divisions[3]
-        random.shuffle(world_div);
-        random.shuffle(mid_div);
-        random.shuffle(tag_div);
-        random.shuffle(women_div)
+        random.shuffle(world_div); random.shuffle(mid_div); random.shuffle(tag_div); random.shuffle(women_div)
         self.feuds.append(f"{world_div[0]} Vs. {world_div[1]}")
         self.feuds.append(f"{mid_div[0]} Vs. {mid_div[1]}")
         self.feuds.append(f"{women_div[0]} Vs. {women_div[1]}")
