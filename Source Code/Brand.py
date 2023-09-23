@@ -39,7 +39,7 @@ class Brand:
         return self.women_teams
 
     # method to assign champions
-    def assignChampions(self, teams, second_midcard, womens_midcard):
+    def assignChampions(self, teams, second_midcard, womens_midcard, team_roster):
         male_roster = self.men; female_roster = self.women
         random.shuffle(male_roster); random.shuffle(female_roster); random.shuffle(teams)  # randomize order of sections
 
@@ -48,7 +48,9 @@ class Brand:
         second_midcard_champion = None
         womens_midcard_champion = None
 
-        singles_division = Brand.removeTeams(male_roster, teams)
+        singles_division = male_roster
+
+        if not team_roster: singles_division = Brand.removeTeams(male_roster, teams)
 
         # assign champions
         world_champion = singles_division[0]
@@ -64,7 +66,7 @@ class Brand:
         return self.champions
 
     # method to assign divisions
-    def assignDivisions(self, tag_teams, champions, second_midcard, womens_midcard):
+    def assignDivisions(self, tag_teams, champions, second_midcard, womens_midcard, team_roster):
         # create the variables
         men = self.men
         women = self.women
@@ -74,7 +76,7 @@ class Brand:
         female_belt_order = 1
 
         # prepare lists for divisions
-        Brand.removeTeams(men, tag_teams)
+        if not team_roster: Brand.removeTeams(men, tag_teams)
 
         # shuffle the lists
         random.shuffle(men)
@@ -105,7 +107,7 @@ class Brand:
                           second_midcard_division, womens_midcard_division]
         return self.divisions
 
-    def assignFeuds(self, divisions):
+    def assignFeuds(self, divisions, team_roster):
         # create the variables
         self.feuds = []
         world_div, mid_div, women_div, tag_div = divisions[0], divisions[1], divisions[2], divisions[3]
@@ -113,7 +115,9 @@ class Brand:
         self.feuds.append(f"{world_div[0]} Vs. {world_div[1]}")
         self.feuds.append(f"{mid_div[0]} Vs. {mid_div[1]}")
         self.feuds.append(f"{women_div[0]} Vs. {women_div[1]}")
-        self.feuds.append(f"{tag_div[0][0]} & {tag_div[0][1]} Vs. {tag_div[1][0]} & {tag_div[1][1]}")
+
+        if team_roster: self.feuds.append(f"{tag_div[0]} Vs. {tag_div[1]}")
+        else: self.feuds.append(f"{tag_div[0][0]} & {tag_div[0][1]} Vs. {tag_div[1][0]} & {tag_div[1][1]}")
         return self.feuds
 
     @staticmethod

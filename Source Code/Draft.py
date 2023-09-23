@@ -1,5 +1,6 @@
 from functions import *
 import os
+from GUI import *
 
 def main():
     inputs = gui()
@@ -10,9 +11,13 @@ def main():
     women_tag_number, second_midcard, women_midcard = inputs[4], inputs[5], inputs[6]  # optional division inputs
     brand_names, title_names = inputs[7], inputs[8]  # name inputs
     file_type = inputs[9]
+    team_roster_file, women_team_roster_file = inputs[10], inputs[11]
 
     # get the rosters
     male_roster, female_roster = getRoster(male_roster_file), getRoster(female_roster_file)
+    team_roster, women_team_roster = None, None
+    if team_roster_file: team_roster = getRoster(team_roster_file)
+    if women_team_roster_file: women_team_roster = getRoster(women_team_roster_file)
 
     draft_file = None
     # create the draft text file
@@ -32,26 +37,33 @@ def main():
         women_tag_sheet = draft_spreadsheet.create_sheet("Women's Tag Division")
 
 
+
     # draft the rosters
     men, women = draftRoster(male_roster, brand_number), draftRoster(female_roster, brand_number)
+    teams, women_teams = None, None
+    if team_roster: teams = draftRoster(team_roster, brand_number)
+    if women_team_roster: women_teams = draftRoster(women_team_roster, brand_number)
 
     # create the brands
     brands = []  # list of the brands
 
     for i in range(0, brand_number):
         b = Brand(brand_names[i], men[i], women[i], title_names[i])
-        developBrand(b, team_number, women_tag_number, second_midcard, women_midcard, draft_file, file_type)
+        if not teams and not women_teams: developBrand(b, team_number, women_tag_number, second_midcard, women_midcard, draft_file, file_type, teams, women_teams)
+        elif teams and not women_teams: developBrand(b, team_number, women_tag_number, second_midcard, women_midcard, draft_file, file_type, teams[i], women_teams)
+        elif not teams and women_teams: developBrand(b, team_number, women_tag_number, second_midcard, women_midcard, draft_file, file_type, teams, women_teams[i])
+        else: developBrand(b, team_number, women_tag_number, second_midcard, women_midcard, draft_file, file_type, teams[i], women_teams[i])
         brands.append(b)
 
     # set womens tag team champions if division exists
-    womens_tag_division = createWomenTagDivision(women_tag_number, brands, draft_file, file_type)
+    womens_tag_division = createWomenTagDivision(women_tag_number, brands, draft_file, file_type, women_teams)
 
     # create spreadsheet
     if file_type == "Spreadsheet":
         i = 1  # iterator
         for b in brands:
             createSpreadsheet(b, i, draft_spreadsheet, rosters_sheet, tag_teams_sheet, champions_sheet, divisions_sheet,
-                feuds_sheet, women_tag_sheet, womens_tag_division, file_type)
+                feuds_sheet, women_tag_sheet, womens_tag_division, file_type, team_roster, women_team_roster)
             i += 1
 
         headers = [rosters_sheet['A1:Z1'], tag_teams_sheet['A1:Z1'], champions_sheet['A1:Z1'], champions_sheet['A2:A20'],
@@ -74,8 +86,10 @@ def main():
 
         if file_type == "Spreadsheet": draft_spreadsheet.save("Draft.xlsx")
 
-    sg.PopupOK("Success", "Your Universe has been successfully generated.\n"
-                          "Look for the Draft.txt and Draft.xlsx files in the program's directory for the results")
+    if file_type == "Text": sg.PopupOK("Success", "Your Universe has been successfully generated.\n"
+                                                  "Look for the Draft.txt file in the program's directory for the results")
+    elif file_type == "Spreadsheet": sg.PopupOK("Success", "Your Universe has been successfully generated.\n"
+                                                           "Look for the Draft.xlsx file in the program's directory for the results")
 
 
 main()
