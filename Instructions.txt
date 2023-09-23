@@ -11,6 +11,7 @@ How to use the program
 	a. You will need to create these lists yourself by creating a .txt file, with one team per line
 	b. Select this file for their respective file browsers
 	c. The number of teams counter will not be used if you do this
+	d. You will want to remove the members of teams in this list from the men and women's roster files before generating
 6. If you want a 2nd Midcard Title per brand, or a Midcard Women's Title, check their respective checkboxes
 7. If you want to change the names of the brands or titles, click on the Brand Tabs and type in your names into the respective text boxes
 8. Click the Generate button
