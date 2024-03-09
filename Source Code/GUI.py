@@ -6,11 +6,11 @@ def gui():
 
     # creates list of default championship names
     title_names = [
-        ["WWE", "United States", "Raw Women's", "Raw Tag Team", "24/7", "Women's United States"],  # Raw
-        ["Universal", "Intercontinental", "Smackdown Women's", "Smackdown Tag Team", "European",
-         "Women's Intercontinental"],  # Smackdown
+        ["World Heavyweight", "Intercontinental", "Women's World", "Raw Tag Team", "24/7", "Women's Intercontinental"],  # Raw
+        ["WWE Universal", "United States", "WWE Women's", "Smackdown Tag Team", "European",
+         "Women's United States"],  # Smackdown
         ["NXT", "North American", "NXT Women's", "NXT Tag Team", "Cruiserweight", "Women's North American"],  # NXT
-        ["AEW World", "TNT", "AEW Women's", "AEW Tag Team", "All Atlantic", "TBS"],  # AEW
+        ["AEW World", "TNT", "AEW Women's", "AEW Tag Team", "International", "TBS"],  # AEW
         ["NXT UK", "Heritage Cup", "NXT UK Women's", "NXT UK Tag Team", "NXT UK Cruiserweight", "Women's Heritage Cup"],
         # NXT UK
         ["ROH World", "Television", "ROH Women's", "ROH Tag Team", "Pure", "Women's Television"]  # ROH
